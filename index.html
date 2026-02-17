@@ -35,7 +35,7 @@
         header {
             padding: 1rem 1.5rem;
             background: var(--warm-white);
-            box-shadow: 0 2px 12px var(--shadow);
+            box-shadow: none;
             z-index: 100;
         }
 
@@ -337,32 +337,32 @@
             <div class="color-palette">
                 <div class="palette-label">Colors</div>
                 
-                <div class="color-swatch active" style="background-color: #E8C4B8;" data-color="#E8C4B8"></div>
-                <div class="color-swatch" style="background-color: #F4D9C6;" data-color="#F4D9C6"></div>
+                <div class="color-swatch active" style="background-color: #F5C6CE;" data-color="#FFE0E3"></div>
+                <div class="color-swatch" style="background-color: #FFECD4;" data-color="#FFECD4"></div>
                 
-                <div class="color-swatch" style="background-color: #D4A5A5;" data-color="#D4A5A5"></div>
-                <div class="color-swatch" style="background-color: #C8B3D4;" data-color="#C8B3D4"></div>
+                <div class="color-swatch" style="background-color: #FFE0EC;" data-color="#FFE0EC"></div>
+                <div class="color-swatch" style="background-color: #EDD4F0;" data-color="#EDD4F0"></div>
                 
-                <div class="color-swatch" style="background-color: #D4B5A8;" data-color="#D4B5A8"></div>
-                <div class="color-swatch" style="background-color: #F5E6D3;" data-color="#F5E6D3"></div>
+                <div class="color-swatch" style="background-color: #FDE5DC;" data-color="#FDE5DC"></div>
+                <div class="color-swatch" style="background-color: #FEF0E5;" data-color="#FEF0E5"></div>
                 
-                <div class="color-swatch" style="background-color: #C9A587;" data-color="#C9A587"></div>
-                <div class="color-swatch" style="background-color: #A8927D;" data-color="#A8927D"></div>
+                <div class="color-swatch" style="background-color: #C89B80;" data-color="#E5C4B0"></div>
+                <div class="color-swatch" style="background-color: #B88B70;" data-color="#D4B8A0"></div>
                 
-                <div class="color-swatch" style="background-color: #B8A894;" data-color="#B8A894"></div>
-                <div class="color-swatch" style="background-color: #D4C4B0;" data-color="#D4C4B0"></div>
+                <div class="color-swatch" style="background-color: #D4C4B4;" data-color="#D4C4B4"></div>
+                <div class="color-swatch" style="background-color: #E8DDD0;" data-color="#E8DDD0"></div>
                 
-                <div class="color-swatch" style="background-color: #C5D4C8;" data-color="#C5D4C8"></div>
-                <div class="color-swatch" style="background-color: #B8C9B3;" data-color="#B8C9B3"></div>
+                <div class="color-swatch" style="background-color: #CFD9C3;" data-color="#E5EAE0"></div>
+                <div class="color-swatch" style="background-color: #C8D8D0;" data-color="#DCE8E0"></div>
                 
-                <div class="color-swatch" style="background-color: #9BAA95;" data-color="#9BAA95"></div>
-                <div class="color-swatch" style="background-color: #8B9B7E;" data-color="#8B9B7E"></div>
+                <div class="color-swatch" style="background-color: #C8D8BD;" data-color="#DDE8D5"></div>
+                <div class="color-swatch" style="background-color: #BFD3B8;" data-color="#D8E5D0"></div>
                 
-                <div class="color-swatch" style="background-color: #C8D8E4;" data-color="#C8D8E4"></div>
-                <div class="color-swatch" style="background-color: #B4C9D9;" data-color="#B4C9D9"></div>
+                <div class="color-swatch" style="background-color: #C8DEF0;" data-color="#E3F0FF"></div>
+                <div class="color-swatch" style="background-color: #D5DDE8;" data-color="#E8EDF5"></div>
                 
-                <div class="color-swatch" style="background-color: #8B7E74;" data-color="#8B7E74"></div>
-                <div class="color-swatch" style="background-color: #6B5D52;" data-color="#6B5D52"></div>
+                <div class="color-swatch" style="background-color: #A8826D;" data-color="#C8A890"></div>
+                <div class="color-swatch" style="background-color: #936D5A;" data-color="#B89880"></div>
             </div>
 
             <div class="divider"></div>
@@ -437,7 +437,7 @@
         const ctx = canvas.getContext('2d');
         
         let drawing = false;
-        let color = '#E8C4B8';
+        let color = '#FFE0E3';
         let tool = 'crayon';
         let size = 20;
         let lastX = 0;
@@ -468,6 +468,10 @@
             canvas.height = h;
             canvas.style.width = w + 'px';
             canvas.style.height = h + 'px';
+            
+            // Clear canvas completely
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, w, h);
             
             redraw();
             saveState();
