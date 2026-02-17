@@ -58,12 +58,11 @@
         .canvas-container {
             flex: 1;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            justify-content: flex-start;
+            align-items: flex-start;
             position: relative;
             background: white;
-            /* Add padding on right for sidebar on mobile */
-            padding-right: 0;
+            overflow: hidden;
         }
 
         #mainCanvas {
@@ -278,11 +277,6 @@
                 max-height: 85vh;
             }
             
-            /* Add right padding to canvas container so image doesn't hide under sidebar */
-            .canvas-container {
-                padding-right: 100px;
-            }
-            
             .sidebar-content {
                 gap: 1rem;
             }
@@ -308,10 +302,6 @@
 
         /* EXTRA SMALL SCREENS */
         @media (max-width: 480px) {
-            .canvas-container {
-                padding-right: 90px;
-            }
-            
             .sidebar {
                 right: 0.2rem;
                 padding: 0.6rem 0.3rem;
@@ -456,9 +446,15 @@
 
         function setup() {
             const container = document.querySelector('.canvas-container');
+            const sidebar = document.querySelector('.sidebar');
+            const sidebarWidth = sidebar.offsetWidth + 16; // sidebar + margin
+            
+            const availW = container.clientWidth - sidebarWidth;
+            const availH = container.clientHeight;
+            
             const scale = Math.min(
-                container.clientWidth / img.width,
-                container.clientHeight / img.height
+                availW / img.width,
+                availH / img.height
             );
             
             const w = Math.floor(img.width * scale);
