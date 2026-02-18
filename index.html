@@ -272,7 +272,7 @@
         /* MOBILE: Make sidebar narrower and add padding to canvas container */
         @media (max-width: 768px) {
             :root {
-                --sidebar-width-mobile: 90px;
+                --sidebar-width-mobile: 110px;
             }
 
             header { padding: 0.8rem 1.2rem; }
@@ -300,6 +300,15 @@
             .tool-btn svg { width: 16px; height: 16px; }
             .tool-label { font-size: 0.4rem; }
             .size-slider { height: 50px; }
+            
+            .zoom-btn-top {
+                height: 32px;
+                font-size: 0.9rem;
+            }
+            
+            .zoom-level-top {
+                font-size: 0.7rem;
+            }
         
         }
 
@@ -331,11 +340,118 @@
             .color-swatch { width: 32px; height: 32px; }
             .tool-btn { width: 38px; height: 38px; }
         }
+    
+        /* PALM REJECTION TOGGLE */
+        .palm-rejection-toggle {
+            width: 100%;
+            padding: 0.25rem 0;
+        }
+
+        .toggle-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+        }
+
+        .toggle-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .toggle-text {
+            font-size: 0.6rem;
+            color: var(--sage);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        /* ZOOM CONTROLS AT TOP */
+        .zoom-controls-top {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: center;
+            width: 100%;
+        }
+
+        .zoom-row-1 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.4rem;
+            width: 100%;
+        }
+
+        .zoom-row-2 {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .zoom-btn-top {
+            background: white;
+            border: 1px solid var(--sage);
+            border-radius: 8px;
+            width: 100%;
+            aspect-ratio: 1;
+            font-size: 1.1rem;
+            color: var(--forest);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+            padding: 0;
+        }
+
+        .zoom-btn-top:hover {
+            background: var(--sage);
+            color: white;
+        }
+
+        .zoom-btn-top.zoom-reset {
+            width: 100%;
+            max-width: 40px;
+            aspect-ratio: 1;
+        }
+
+        .zoom-level-top {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            color: var(--sage);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            background: transparent;
+        }
+
+        /* CANVAS ZOOM */
+        .canvas-container.zoomed {
+            overflow: auto;
+            cursor: grab;
+        }
+
+        .canvas-container.zoomed:active {
+            cursor: grabbing;
+        }
+
+        #mainCanvas.no-overpaint {
+            /* Visual indicator when no-overpaint is active */
+        }
     </style>
 </head>
 <body>
     <header>
         <div class="brand-title">Seeds of Wonder</div>
+
+            <div class="divider"></div>
+
         <div class="subtitle">Valeur Coloring</div>
     </header>
 
@@ -345,6 +461,21 @@
 
     <div class="sidebar">
         <div class="sidebar-content">
+            <!-- ZOOM CONTROLS AT TOP -->
+            <div class="zoom-controls-top">
+                <div class="zoom-row-1">
+                    <button class="zoom-btn-top" id="zoomOut" title="Zoom Out">−</button>
+                    <span class="zoom-level-top" id="zoomLevel">100%</span>
+                    <button class="zoom-btn-top" id="zoomIn" title="Zoom In">+</button>
+                </div>
+                <div class="zoom-row-2">
+                    <button class="zoom-btn-top zoom-reset" id="zoomReset" title="Reset Zoom">⟲</button>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- COLOR PALETTE -->
             <div class="color-palette">
                 <div class="palette-label">Colors</div>
                 
@@ -378,6 +509,7 @@
 
             <div class="divider"></div>
 
+            <!-- TOOLS -->
             <div class="tools">
                 <button class="tool-btn" id="penBtn" data-tool="pen">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -440,6 +572,17 @@
                 <span class="brush-size-label">Size</span>
                 <input type="range" id="brushSize" class="size-slider" min="5" max="50" value="20" step="1" orient="vertical">
             </div>
+
+            <div class="divider"></div>
+
+            <!-- PALM REJECTION AT BOTTOM -->
+            <div class="palm-rejection-toggle">
+                <label class="toggle-label">
+                    <input type="checkbox" id="palmRejection" checked>
+                    <span class="toggle-text">Palm Rejection</span>
+                </label>
+            </div>
+        </div>
         </div>
     </div>
 
@@ -808,6 +951,256 @@
             ctx.putImageData(coloringData, 0, 0);
             redraw();
         });
+    
+        // ===== PALM REJECTION =====
+        let palmRejectionEnabled = true;
+        
+        document.getElementById('palmRejection').onchange = function(e) {
+            palmRejectionEnabled = e.target.checked;
+            console.log('Palm rejection:', palmRejectionEnabled ? 'ON' : 'OFF');
+        };
+
+        // Override touch event handlers with palm rejection
+        const originalTouchStart = canvas.ontouchstart;
+        const originalTouchMove = canvas.ontouchmove;
+        const originalTouchEnd = canvas.ontouchend;
+
+        canvas.ontouchstart = null;
+        canvas.ontouchmove = null;
+        canvas.ontouchend = null;
+
+        canvas.addEventListener('touchstart', function(e) {
+            if (palmRejectionEnabled) {
+                // Only allow Apple Pencil or single-touch with small contact area
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    // Apple Pencil has touchType 'stylus'
+                    if (touch.touchType === 'stylus' || touch.force > 0) {
+                        startDrawing(e);
+                    } else {
+                        // Reject if contact area is too large (palm)
+                        const radiusX = touch.radiusX || 0;
+                        const radiusY = touch.radiusY || 0;
+                        const avgRadius = (radiusX + radiusY) / 2;
+                        
+                        if (avgRadius < 20) { // Finger tip is usually < 20, palm is much larger
+                            startDrawing(e);
+                        } else {
+                            console.log('Palm rejected (radius:', avgRadius, ')');
+                        }
+                    }
+                }
+            } else {
+                startDrawing(e);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', function(e) {
+            if (palmRejectionEnabled && drawing) {
+                const touch = e.touches[0];
+                if (touch.touchType === 'stylus' || touch.force > 0) {
+                    moveDrawing(e);
+                } else {
+                    const radiusX = touch.radiusX || 0;
+                    const radiusY = touch.radiusY || 0;
+                    const avgRadius = (radiusX + radiusY) / 2;
+                    if (avgRadius < 20) {
+                        moveDrawing(e);
+                    }
+                }
+            } else if (drawing) {
+                moveDrawing(e);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', function(e) {
+            stopDrawing(e);
+        }, { passive: false });
+
+        // ===== ZOOM FUNCTIONALITY =====
+        let currentZoom = 1.0;
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+        let panScrollLeft = 0;
+        let panScrollTop = 0;
+
+        const container = document.querySelector('.canvas-container');
+
+        function updateZoom(newZoom) {
+            currentZoom = Math.max(0.5, Math.min(3.0, newZoom)); // Limit 50% to 300%
+            
+            // Update canvas scale
+            const baseW = parseInt(canvas.style.width) || canvas.width;
+            const baseH = parseInt(canvas.style.height) || canvas.height;
+            
+            canvas.style.transform = 'scale(' + currentZoom + ')';
+            canvas.style.transformOrigin = 'top left';
+            
+            // Update zoom level display
+            document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+            
+            // Enable/disable panning
+            if (currentZoom > 1.0) {
+                container.classList.add('zoomed');
+            } else {
+                container.classList.remove('zoomed');
+            }
+        }
+
+        document.getElementById('zoomIn').onclick = function() {
+            updateZoom(currentZoom + 0.25);
+        };
+
+        document.getElementById('zoomOut').onclick = function() {
+            updateZoom(currentZoom - 0.25);
+        };
+
+        document.getElementById('zoomReset').onclick = function() {
+            updateZoom(1.0);
+            container.scrollLeft = 0;
+            container.scrollTop = 0;
+        };
+
+        // Pinch-to-zoom for touch devices
+        let lastTouchDistance = 0;
+        
+        container.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                lastTouchDistance = Math.hypot(
+                    touch1.clientX - touch2.clientX,
+                    touch1.clientY - touch2.clientY
+                );
+            } else if (e.touches.length === 1 && currentZoom > 1.0) {
+                // Start panning
+                isPanning = true;
+                panStartX = e.touches[0].clientX;
+                panStartY = e.touches[0].clientY;
+                panScrollLeft = container.scrollLeft;
+                panScrollTop = container.scrollTop;
+            }
+        }, { passive: false });
+
+        container.addEventListener('touchmove', function(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const newDistance = Math.hypot(
+                    touch1.clientX - touch2.clientX,
+                    touch1.clientY - touch2.clientY
+                );
+                
+                if (lastTouchDistance > 0) {
+                    const delta = newDistance - lastTouchDistance;
+                    const zoomDelta = delta * 0.01;
+                    updateZoom(currentZoom + zoomDelta);
+                }
+                lastTouchDistance = newDistance;
+            } else if (isPanning && e.touches.length === 1) {
+                e.preventDefault();
+                const deltaX = e.touches[0].clientX - panStartX;
+                const deltaY = e.touches[0].clientY - panStartY;
+                container.scrollLeft = panScrollLeft - deltaX;
+                container.scrollTop = panScrollTop - deltaY;
+            }
+        }, { passive: false });
+
+        container.addEventListener('touchend', function(e) {
+            if (e.touches.length < 2) {
+                lastTouchDistance = 0;
+            }
+            if (e.touches.length === 0) {
+                isPanning = false;
+            }
+        });
+
+        // Mouse wheel zoom for desktop
+        container.addEventListener('wheel', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                updateZoom(currentZoom + delta);
+            }
+        }, { passive: false });
+
+        // Pan with mouse drag when zoomed
+        container.addEventListener('mousedown', function(e) {
+            if (currentZoom > 1.0 && e.button === 0) {
+                isPanning = true;
+                panStartX = e.clientX;
+                panStartY = e.clientY;
+                panScrollLeft = container.scrollLeft;
+                panScrollTop = container.scrollTop;
+                container.style.cursor = 'grabbing';
+            }
+        });
+
+        container.addEventListener('mousemove', function(e) {
+            if (isPanning) {
+                e.preventDefault();
+                const deltaX = e.clientX - panStartX;
+                const deltaY = e.clientY - panStartY;
+                container.scrollLeft = panScrollLeft - deltaX;
+                container.scrollTop = panScrollTop - deltaY;
+            }
+        });
+
+        container.addEventListener('mouseup', function(e) {
+            isPanning = false;
+            if (currentZoom > 1.0) {
+                container.style.cursor = 'grab';
+            }
+        });
+
+        container.addEventListener('mouseleave', function(e) {
+            isPanning = false;
+        });
+
+        // ===== NO OVERPAINT ON BLACK LINES =====
+        let noOverpaint = false; // Toggle for pen tool
+
+        // Add keyboard shortcut (P key) to toggle no-overpaint mode
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'p' || e.key === 'P') {
+                noOverpaint = !noOverpaint;
+                console.log('No-overpaint mode:', noOverpaint ? 'ON' : 'OFF');
+                if (noOverpaint) {
+                    alert('No-overpaint mode: ON (Pen will not draw over black lines)\nPress P again to toggle off');
+                }
+            }
+        });
+
+        // Modify the draw function to check pixel color before drawing
+        function isBlackLine(x, y) {
+            // Check if the pixel at x,y is part of the black line art
+            const pixel = ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+            const r = pixel[0], g = pixel[1], b = pixel[2];
+            
+            // Consider it a black line if it's dark (R, G, B all < 50)
+            return (r < 50 && g < 50 && b < 50);
+        }
+
+        // Store original draw function
+        const originalDraw = draw;
+        
+        // Override draw function to add no-overpaint check
+        draw = function(x, y) {
+            if (noOverpaint && tool === 'pen') {
+                // Check if we're trying to draw on a black line
+                if (!isBlackLine(x, y)) {
+                    originalDraw(x, y);
+                }
+                // If on black line, skip drawing
+            } else {
+                originalDraw(x, y);
+            }
+        };
+
+    
     </script>
 </body>
 </html>
