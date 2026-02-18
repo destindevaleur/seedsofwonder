@@ -20,6 +20,8 @@
             --forest: #4A5D3F;
             --soft-black: #2C2C2C;
             --shadow: rgba(0, 0, 0, 0.08);
+            --sidebar-width-desktop: 120px;
+            --sidebar-width-mobile: 95px;
         }
 
         body {
@@ -62,19 +64,20 @@
             align-items: center;
             position: relative;
             background: white;
-            /* Add padding on right for sidebar on mobile */
-            padding-right: 0;
+            padding-right: var(--sidebar-width-desktop);
+            min-height: 0; /* Allow flex child to shrink */
         }
 
         #mainCanvas {
             cursor: crosshair;
             max-width: 100%;
             max-height: 100%;
+            object-fit: contain;
         }
 
         .sidebar {
             position: fixed;
-            right: 1rem;
+            right: 0.5rem;
             top: 50%;
             transform: translateY(-50%);
             background: rgba(253, 251, 247, 0.95);
@@ -86,6 +89,7 @@
             max-height: 90vh;
             overflow-y: auto;
             overflow-x: hidden;
+            width: var(--sidebar-width-desktop);
         }
 
         .sidebar::-webkit-scrollbar {
@@ -267,29 +271,36 @@
 
         /* MOBILE: Make sidebar narrower and add padding to canvas container */
         @media (max-width: 768px) {
+            :root {
+                --sidebar-width-mobile: 90px;
+            }
+
             header { padding: 0.8rem 1.2rem; }
             .brand-title { font-size: 1rem; }
             .subtitle { font-size: 0.55rem; }
             
-            /* Narrower sidebar on mobile */
-            .sidebar {
-                right: 0.25rem;
-                padding: 0.75rem 0.4rem;
-                max-height: 85vh;
+            .canvas-container {
+                padding-right: var(--sidebar-width-mobile);
+                padding-left: 0.5rem;
             }
             
-            /* Add right padding to canvas container so image doesn't hide under sidebar */
-            .canvas-container {
-                padding-right: 100px;
+            .sidebar {
+                right: 0.25rem;
+                padding: 0.75rem 0.35rem;
+                max-height: 85vh;
+                width: var(--sidebar-width-mobile);
             }
             
             .sidebar-content {
                 gap: 1rem;
             }
             
-            .color-swatch { width: 34px; height: 34px; }
-            .tool-btn { width: 42px; height: 42px; }
+            .color-swatch { width: 32px; height: 32px; }
+            .tool-btn { width: 40px; height: 40px; }
+            .tool-btn svg { width: 16px; height: 16px; }
+            .tool-label { font-size: 0.4rem; }
             .size-slider { height: 50px; }
+        
         }
 
         @media (max-height: 700px) {
@@ -457,18 +468,29 @@
         function setup() {
             const container = document.querySelector('.canvas-container');
             
-            // Canvas at FULL RESOLUTION for crisp rendering
+            // FULL RESOLUTION canvas for crisp rendering
             canvas.width = img.width;
             canvas.height = img.height;
             
-            // Scale DOWN via CSS only (maintains quality)
-            const scale = Math.min(
-                container.clientWidth / img.width,
-                container.clientHeight / img.height
-            );
+            // Calculate available space
+            const rect = container.getBoundingClientRect();
+            const availableWidth = rect.width;
+            const availableHeight = rect.height;
+            
+            console.log('Container size:', availableWidth, 'x', availableHeight);
+            console.log('Image size:', img.width, 'x', img.height);
+            
+            // Calculate scale to fit
+            const scaleW = availableWidth / img.width;
+            const scaleH = availableHeight / img.height;
+            const scale = Math.min(scaleW, scaleH) * 0.95; // 95% to leave some margin
+            
             const displayW = Math.floor(img.width * scale);
             const displayH = Math.floor(img.height * scale);
             
+            console.log('Scale:', scale, 'Display size:', displayW, 'x', displayH);
+            
+            // Set explicit pixel dimensions
             canvas.style.width = displayW + 'px';
             canvas.style.height = displayH + 'px';
             canvas.style.imageRendering = 'high-quality';
